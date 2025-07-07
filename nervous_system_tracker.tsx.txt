@@ -1,0 +1,776 @@
+import React, { useState, useEffect } from 'react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+
+export default function NervousSystemTracker() {
+  const [currentPage, setCurrentPage] = useState('main');
+  const [selectedState, setSelectedState] = useState(null);
+  const [selectedFeelings, setSelectedFeelings] = useState([]);
+  const [selectedBodyAreas, setSelectedBodyAreas] = useState([]);
+  const [selectedSensations, setSelectedSensations] = useState([]);
+  const [currentBodyArea, setCurrentBodyArea] = useState(null);
+  const [currentFeelingCategory, setCurrentFeelingCategory] = useState(null);
+  const [storedData, setStoredData] = useState([]);
+  const [journalEntries, setJournalEntries] = useState([]);
+  const [currentJournalEntry, setCurrentJournalEntry] = useState({
+    whatHappened: '',
+    howDoYouFeel: '',
+    locateFeeling: '',
+    situationOrPerson: '',
+    feelsFamiliar: '',
+    storyOrBelief: '',
+    pattern: '',
+    bodyProtection: '',
+    healthierStory: '',
+    needInMoment: '',
+    actionOrSitWith: '',
+    chooseToRespond: '',
+    doDifferently: ''
+  });
+
+  const states = [
+    {
+      id: 'ventral',
+      title: 'Social Engagement (Ventral Vagal)',
+      description: 'Calm, connected, safe, curious, compassionate. A sense of being grounded in the present moment.',
+      color: 'bg-green-200 hover:bg-green-300 border-green-300',
+      textColor: 'text-green-800'
+    },
+    {
+      id: 'fight',
+      title: 'Fight (Sympathetic)',
+      description: 'Anger, rage, aggression, frustration, irritation and agitation. A sense of being threatened or challenged.',
+      color: 'bg-red-200 hover:bg-red-300 border-red-300',
+      textColor: 'text-red-800'
+    },
+    {
+      id: 'flight',
+      title: 'Flight (Sympathetic)',
+      description: 'Panic, fear, anxiety, worry & concern. A sense of feeling overwhelmed or trapped.',
+      color: 'bg-orange-200 hover:bg-orange-300 border-orange-300',
+      textColor: 'text-orange-800'
+    },
+    {
+      id: 'fawn',
+      title: 'Fawn (Sympathetic)',
+      description: 'Exhausted, anxious, disconnected from own emotions and needs, guilty or ashamed, lonely or invisible. A sense of being overly attuned and responsible for others.',
+      color: 'bg-yellow-200 hover:bg-yellow-300 border-yellow-300',
+      textColor: 'text-yellow-800'
+    },
+    {
+      id: 'freeze',
+      title: 'Freeze or Shutdown (Dorsal Vagal)',
+      description: 'Withdrawn, numb, disconnected, exhausted, hopeless. A sense of being trapped or helpless.',
+      color: 'bg-blue-200 hover:bg-blue-300 border-blue-300',
+      textColor: 'text-blue-800'
+    }
+  ];
+
+  const feelings = {
+    Joy: ['Optimistic', 'Excited', 'Proud', 'Cheerful', 'Happy', 'Content', 'Playful', 'Grateful', 'Hopeful'],
+    Sadness: ['Disappointed', 'Hurt', 'Lonely', 'Grief', 'Depressed', 'Gloomy', 'Miserable', 'Ashamed', 'Heartbroken'],
+    Fear: ['Nervous', 'Anxious', 'Insecure', 'Helpless', 'Scared', 'Worried', 'Overwhelmed', 'Rejected', 'Terrified'],
+    Anger: ['Frustrated', 'Annoyed', 'Bitter', 'Mad', 'Furious', 'Jealous', 'Resentful', 'Enraged', 'Irritated'],
+    Disgust: ['Disapproving', 'Judgmental', 'Embarrassed', 'Appalled', 'Contemptuous', 'Uncomfortable', 'Nauseated', 'Aversion', 'Revolted'],
+    Surprise: ['Shocked', 'Confused', 'Amazed', 'Startled', 'Disoriented', 'Awed', 'Stunned', 'Curious', 'Intrigued'],
+    Love: ['Affectionate', 'Compassionate', 'Tender', 'Passionate', 'Warm', 'Romantic', 'Caring', 'Protective', 'Connected']
+  };
+
+  const bodyAreas = ['Head', 'Face', 'Eyes', 'Jaw', 'Mouth', 'Throat', 'Neck', 'Shoulders', 'Chest', 'Heart', 'Arms', 'Hands', 'Stomach', 'Gut', 'Back', 'Legs', 'Knees', 'Feet', 'Skin'];
+
+  const sensations = ['Pressure', 'Buzzing', 'Foggy', 'Light-headed', 'Pounding', 'Flushed', 'Smiling', 'Tense', 'Twitching', 'Numb', 'Watery', 'Heavy', 'Blinking', 'Darting', 'Wide-open', 'Clenching', 'Tightness', 'Grinding', 'Trembling', 'Dryness', 'Gagging', 'Tight-lipped', 'Lump', 'Choking sensation', 'Scratchy', 'Blocked', 'Stiffness', 'Heat', 'Tingling', 'Vulnerability', 'Heaviness', 'Drooping', 'Constricted', 'Expanded', 'Fluttering', 'Open', 'Racing heartbeat', 'Aching', 'Warmth', 'Calm', 'Restlessness', 'Weakness', 'Desire to reach', 'Clenched', 'Shaking', 'Cold', 'Sweaty', 'Fidgety', 'Nausea', 'Knots in stomach', 'Butterflies', 'Churning', 'Dull ache', 'Twisting', 'Emptiness', 'Pulling sensation', 'Alertness', 'Bracing', 'Hot or cold spots', 'Shaky', 'Numbness', 'Instability', 'Buckling knees', 'Itchiness', 'Crawling sensation', 'Hypersensitivity', 'Prickly skin', 'Grounded feeling'];
+
+  // Load stored data on component mount
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem('nervousSystemData') || '[]');
+    setStoredData(saved);
+    const savedJournal = JSON.parse(localStorage.getItem('journalEntries') || '[]');
+    setJournalEntries(savedJournal);
+  }, []);
+
+  const handleStateSelect = (state) => {
+    setSelectedState(state);
+    setCurrentPage('feelings');
+    setSelectedFeelings([]);
+    setSelectedBodyAreas([]);
+    setSelectedSensations([]);
+  };
+
+  const toggleFeeling = (feeling) => {
+    setSelectedFeelings(prev => 
+      prev.includes(feeling) 
+        ? prev.filter(f => f !== feeling)
+        : [...prev, feeling]
+    );
+  };
+
+  const toggleBodyArea = (area) => {
+    setSelectedBodyAreas(prev => 
+      prev.includes(area) 
+        ? prev.filter(a => a !== area)
+        : [...prev, area]
+    );
+  };
+
+  const toggleSensation = (sensation) => {
+    setSelectedSensations(prev => 
+      prev.includes(sensation) 
+        ? prev.filter(s => s !== sensation)
+        : [...prev, sensation]
+    );
+  };
+
+  const saveData = () => {
+    const newEntry = {
+      id: Date.now(),
+      timestamp: new Date().toISOString(),
+      state: selectedState.title,
+      feelings: selectedFeelings,
+      bodyAreas: selectedBodyAreas,
+      sensations: selectedSensations
+    };
+    
+    const updatedData = [...storedData, newEntry];
+    setStoredData(updatedData);
+    localStorage.setItem('nervousSystemData', JSON.stringify(updatedData));
+    
+    setCurrentPage('main');
+    setSelectedState(null);
+    setSelectedFeelings([]);
+    setSelectedBodyAreas([]);
+    setSelectedSensations([]);
+  };
+
+  const handleJournalChange = (field, value) => {
+    setCurrentJournalEntry(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const saveJournalEntry = () => {
+    const newJournalEntry = {
+      id: Date.now(),
+      timestamp: new Date().toISOString(),
+      ...currentJournalEntry
+    };
+    
+    const updatedJournalEntries = [...journalEntries, newJournalEntry];
+    setJournalEntries(updatedJournalEntries);
+    localStorage.setItem('journalEntries', JSON.stringify(updatedJournalEntries));
+    
+    // Reset form
+    setCurrentJournalEntry({
+      whatHappened: '',
+      howDoYouFeel: '',
+      locateFeeling: '',
+      situationOrPerson: '',
+      feelsFamiliar: '',
+      storyOrBelief: '',
+      pattern: '',
+      bodyProtection: '',
+      healthierStory: '',
+      needInMoment: '',
+      actionOrSitWith: '',
+      chooseToRespond: '',
+      doDifferently: ''
+    });
+    
+    setCurrentPage('main');
+  };
+
+  const exportData = () => {
+    const exportData = {
+      nervousSystemData: storedData,
+      journalEntries: journalEntries,
+      exportDate: new Date().toISOString()
+    };
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = `nervous-system-data-${new Date().toISOString().split('T')[0]}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  };
+
+  const getStateColor = (stateName) => {
+    const state = states.find(s => s.title === stateName);
+    return state ? state.color : 'bg-gray-200';
+  };
+
+  const generateReportData = () => {
+    const stateFrequency = {};
+    const feelingFrequency = {};
+    const bodyAreaFrequency = {};
+    const sensationFrequency = {};
+
+    storedData.forEach(entry => {
+      // Count states
+      stateFrequency[entry.state] = (stateFrequency[entry.state] || 0) + 1;
+      
+      // Count feelings
+      entry.feelings.forEach(feeling => {
+        feelingFrequency[feeling] = (feelingFrequency[feeling] || 0) + 1;
+      });
+      
+      // Count body areas
+      entry.bodyAreas.forEach(area => {
+        bodyAreaFrequency[area] = (bodyAreaFrequency[area] || 0) + 1;
+      });
+      
+      // Count sensations
+      entry.sensations.forEach(sensation => {
+        sensationFrequency[sensation] = (sensationFrequency[sensation] || 0) + 1;
+      });
+    });
+
+    return {
+      states: Object.entries(stateFrequency).map(([name, value]) => ({ name, value })),
+      feelings: Object.entries(feelingFrequency).map(([name, value]) => ({ name, value })).slice(0, 10),
+      bodyAreas: Object.entries(bodyAreaFrequency).map(([name, value]) => ({ name, value })).slice(0, 10),
+      sensations: Object.entries(sensationFrequency).map(([name, value]) => ({ name, value })).slice(0, 10)
+    };
+  };
+
+  const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#d084d0', '#87ceeb', '#dda0dd', '#98fb98', '#f0e68c'];
+
+  if (currentPage === 'main') {
+    return (
+      <div className="max-w-4xl mx-auto p-6 bg-white min-h-screen">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Track your current state</h1>
+          <p className="text-gray-600">Select the button that best describes how you're feeling right now</p>
+        </div>
+
+        <div className="grid gap-4 mb-8">
+          {states.map((state) => (
+            <button
+              key={state.id}
+              onClick={() => handleStateSelect(state)}
+              className={`${state.color} ${state.textColor} p-4 rounded-lg border-2 transition-all duration-200 text-left hover:shadow-md transform hover:-translate-y-1`}
+            >
+              <h3 className="font-semibold text-lg mb-2">{state.title}</h3>
+              <p className="text-sm opacity-90">{state.description}</p>
+            </button>
+          ))}
+        </div>
+
+        <div className="mb-8">
+          <button
+            onClick={() => setCurrentPage('journal')}
+            className="w-full bg-purple-500 hover:bg-purple-600 text-white p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md transform hover:-translate-y-1 font-semibold"
+          >
+            Reflect to Regulate
+          </button>
+        </div>
+
+        {storedData.length > 0 && (
+          <div className="flex gap-4 mb-4">
+            <button
+              onClick={() => setCurrentPage('reports')}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors"
+            >
+              View Reports
+            </button>
+            {journalEntries.length > 0 && (
+              <button
+                onClick={() => setCurrentPage('journalEntries')}
+                className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-2 rounded-lg transition-colors"
+              >
+                View Journal Entries
+              </button>
+            )}
+            <button
+              onClick={(e) => {
+  e.preventDefault();
+  exportData();
+}}
+              className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg transition-colors"
+            >
+              Export Data
+            </button>
+            <button
+              onClick={() => {
+                localStorage.removeItem('nervousSystemData');
+                localStorage.removeItem('journalEntries');
+                setStoredData([]);
+                setJournalEntries([]);
+              }}
+              className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg transition-colors"
+            >
+              Clear All Data
+            </button>
+          </div>
+        )}
+
+        {storedData.length > 0 && (
+          <div className="bg-gray-50 p-6 rounded-lg">
+            <h3 className="font-semibold text-lg mb-4">Recent Entries ({storedData.length})</h3>
+            <div className="space-y-2">
+              {storedData.slice(-5).reverse().map((entry) => (
+                <div key={entry.id} className="flex items-center space-x-3 text-sm">
+                  <span className="text-gray-500">{new Date(entry.timestamp).toLocaleString()}</span>
+                  <span className="font-medium">{entry.state}</span>
+                  <span className="text-gray-600">
+                    {entry.feelings.length} feelings, {entry.bodyAreas.length} body areas, {entry.sensations.length} sensations
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (currentPage === 'feelings') {
+    return (
+      <div className="max-w-4xl mx-auto p-6 bg-white min-h-screen">
+        <div className="mb-6">
+          <button
+            onClick={() => setCurrentPage('main')}
+            className="text-blue-600 hover:text-blue-800 mb-4"
+          >
+            ← Back to States
+          </button>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">{selectedState.title}</h1>
+          <h2 className="text-xl font-semibold text-gray-700 mb-4">FEELINGS</h2>
+        </div>
+
+        {!currentFeelingCategory ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+            {Object.keys(feelings).map((category) => (
+              <button
+                key={category}
+                onClick={() => setCurrentFeelingCategory(category)}
+                className="bg-purple-100 hover:bg-purple-200 text-purple-800 p-4 rounded-lg border-2 border-purple-300 transition-all duration-200 hover:shadow-md"
+              >
+                <h3 className="font-semibold text-lg">{category}</h3>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="mb-8">
+            <div className="flex items-center mb-4">
+              <button
+                onClick={() => setCurrentFeelingCategory(null)}
+                className="text-blue-600 hover:text-blue-800 mr-4"
+              >
+                ← Back to Categories
+              </button>
+              <h3 className="text-xl font-semibold">{currentFeelingCategory}</h3>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {feelings[currentFeelingCategory].map((feeling) => (
+                <button
+                  key={feeling}
+                  onClick={() => toggleFeeling(feeling)}
+                  className={`p-3 rounded-lg border-2 transition-all duration-200 ${
+                    selectedFeelings.includes(feeling)
+                      ? 'bg-green-200 border-green-400 text-green-800'
+                      : 'bg-gray-100 hover:bg-gray-200 border-gray-300 text-gray-800'
+                  }`}
+                >
+                  {feeling}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {selectedFeelings.length > 0 && (
+          <div className="mb-6">
+            <h4 className="font-semibold mb-2">Selected Feelings:</h4>
+            <div className="flex flex-wrap gap-2">
+              {selectedFeelings.map((feeling) => (
+                <span key={feeling} className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
+                  {feeling}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <button
+          onClick={() => setCurrentPage('bodyAreas')}
+          className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-colors"
+        >
+          Continue to Body Areas
+        </button>
+      </div>
+    );
+  }
+
+  if (currentPage === 'bodyAreas') {
+    return (
+      <div className="max-w-4xl mx-auto p-6 bg-white min-h-screen">
+        <div className="mb-6">
+          <button
+            onClick={() => setCurrentPage('feelings')}
+            className="text-blue-600 hover:text-blue-800 mb-4"
+          >
+            ← Back to Feelings
+          </button>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">{selectedState.title}</h1>
+          <h2 className="text-xl font-semibold text-gray-700 mb-4">WHERE DO YOU FEEL IT IN YOUR BODY?</h2>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-8">
+          {bodyAreas.map((area) => (
+            <button
+              key={area}
+              onClick={() => {
+                toggleBodyArea(area);
+                setCurrentBodyArea(area);
+              }}
+              className={`p-3 rounded-lg border-2 transition-all duration-200 ${
+                selectedBodyAreas.includes(area)
+                  ? 'bg-orange-200 border-orange-400 text-orange-800'
+                  : 'bg-gray-100 hover:bg-gray-200 border-gray-300 text-gray-800'
+              }`}
+            >
+              {area}
+            </button>
+          ))}
+        </div>
+
+        {selectedBodyAreas.length > 0 && (
+          <div className="mb-6">
+            <h4 className="font-semibold mb-2">Selected Body Areas:</h4>
+            <div className="flex flex-wrap gap-2">
+              {selectedBodyAreas.map((area) => (
+                <span key={area} className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm">
+                  {area}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <button
+          onClick={() => setCurrentPage('sensations')}
+          className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-colors"
+        >
+          Continue to Sensations
+        </button>
+      </div>
+    );
+  }
+
+  if (currentPage === 'sensations') {
+    return (
+      <div className="max-w-4xl mx-auto p-6 bg-white min-h-screen">
+        <div className="mb-6">
+          <button
+            onClick={() => setCurrentPage('bodyAreas')}
+            className="text-blue-600 hover:text-blue-800 mb-4"
+          >
+            ← Back to Body Areas
+          </button>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">{selectedState.title}</h1>
+          <h2 className="text-xl font-semibold text-gray-700 mb-4">PHYSICAL SENSATIONS</h2>
+          {currentBodyArea && (
+            <h3 className="text-lg text-gray-600 mb-4">Sensations in: {currentBodyArea}</h3>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+          {sensations.map((sensation) => (
+            <button
+              key={sensation}
+              onClick={() => {
+                toggleSensation(sensation);
+                if (currentBodyArea && !selectedBodyAreas.includes(currentBodyArea)) {
+                  toggleBodyArea(currentBodyArea);
+                }
+              }}
+              className={`p-3 rounded-lg border-2 transition-all duration-200 text-sm ${
+                selectedSensations.includes(sensation)
+                  ? 'bg-red-200 border-red-400 text-red-800'
+                  : 'bg-gray-100 hover:bg-gray-200 border-gray-300 text-gray-800'
+              }`}
+            >
+              {sensation}
+            </button>
+          ))}
+        </div>
+
+        {selectedSensations.length > 0 && (
+          <div className="mb-6">
+            <h4 className="font-semibold mb-2">Selected Sensations:</h4>
+            <div className="flex flex-wrap gap-2">
+              {selectedSensations.map((sensation) => (
+                <span key={sensation} className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm">
+                  {sensation}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <button
+          onClick={saveData}
+          className="bg-green-500 hover:bg-green-600 text-white px-8 py-3 rounded-lg transition-colors font-semibold"
+        >
+          Save Entry
+        </button>
+      </div>
+    );
+  }
+
+  if (currentPage === 'reports') {
+    const reportData = generateReportData();
+    
+    return (
+      <div className="max-w-6xl mx-auto p-6 bg-white min-h-screen">
+        <div className="mb-6">
+          <button
+            onClick={() => setCurrentPage('main')}
+            className="text-blue-600 hover:text-blue-800 mb-4"
+          >
+            ← Back to Main
+          </button>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Reports & Analytics</h1>
+          <p className="text-gray-600">Based on {storedData.length} entries</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {reportData.states.length > 0 && (
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <h3 className="text-lg font-semibold mb-4">Nervous System States</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={reportData.states}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {reportData.states.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {reportData.feelings.length > 0 && (
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <h3 className="text-lg font-semibold mb-4">Top 10 Feelings</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={reportData.feelings}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="value" fill="#82ca9d" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {reportData.bodyAreas.length > 0 && (
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <h3 className="text-lg font-semibold mb-4">Top 10 Body Areas</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={reportData.bodyAreas}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="value" fill="#ffc658" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {reportData.sensations.length > 0 && (
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <h3 className="text-lg font-semibold mb-4">Top 10 Sensations</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={reportData.sensations}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="value" fill="#ff7300" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (currentPage === 'journalEntries') {
+    const journalPrompts = [
+      { key: 'whatHappened', label: 'What happened?' },
+      { key: 'howDoYouFeel', label: 'How do you feel?' },
+      { key: 'locateFeeling', label: 'Can you locate the feeling in your body?' },
+      { key: 'situationOrPerson', label: 'Which situation or person caused this emotional reaction?' },
+      { key: 'feelsFamiliar', label: 'Does it feel familiar to you?' },
+      { key: 'storyOrBelief', label: 'What\'s the story or belief that\'s coming up for you?' },
+      { key: 'pattern', label: 'What\'s the pattern that plays out?' },
+      { key: 'bodyProtection', label: 'What is your body trying to protect you from? What\'s the threat?' },
+      { key: 'healthierStory', label: 'What would be a healthier story or belief?' },
+      { key: 'needInMoment', label: 'What do you need in this moment?' },
+      { key: 'actionOrSitWith', label: 'Is there an action you can take to feel better, or do you just need to sit with this feeling for a moment?' },
+      { key: 'chooseToRespond', label: 'How are you going to choose to respond?' },
+      { key: 'doDifferently', label: 'What could you do differently in future?' }
+    ];
+
+    return (
+      <div className="max-w-6xl mx-auto p-6 bg-white min-h-screen">
+        <div className="mb-6">
+          <button
+            onClick={() => setCurrentPage('main')}
+            className="text-blue-600 hover:text-blue-800 mb-4"
+          >
+            ← Back to Main
+          </button>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Journal Entries</h1>
+          <p className="text-gray-600">Your reflection journal history ({journalEntries.length} entries)</p>
+        </div>
+
+        <div className="space-y-6">
+          {journalEntries.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">No journal entries yet.</p>
+              <button
+                onClick={() => setCurrentPage('journal')}
+                className="mt-4 bg-purple-500 hover:bg-purple-600 text-white px-6 py-2 rounded-lg transition-colors"
+              >
+                Start Journaling
+              </button>
+            </div>
+          ) : (
+            journalEntries.slice().reverse().map((entry) => (
+              <div key={entry.id} className="bg-gray-50 p-6 rounded-lg border">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    {new Date(entry.timestamp).toLocaleDateString()} at {new Date(entry.timestamp).toLocaleTimeString()}
+                  </h3>
+                  <button
+                    onClick={() => {
+                      const entryData = journalPrompts.map(prompt => ({
+                        question: prompt.label,
+                        answer: entry[prompt.key] || ''
+                      })).filter(item => item.answer.trim() !== '');
+                      
+                      const textData = `Journal Entry - ${new Date(entry.timestamp).toLocaleString()}\n\n` +
+                        entryData.map(item => `${item.question}\n${item.answer}\n`).join('\n');
+                      
+                      const dataUri = 'data:text/plain;charset=utf-8,' + encodeURIComponent(textData);
+                      const linkElement = document.createElement('a');
+                      linkElement.setAttribute('href', dataUri);
+                      linkElement.setAttribute('download', `journal-entry-${new Date(entry.timestamp).toISOString().split('T')[0]}.txt`);
+                      linkElement.click();
+                    }}
+                    className="text-blue-600 hover:text-blue-800 text-sm"
+                  >
+                    Export Entry
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  {journalPrompts.map((prompt) => (
+                    entry[prompt.key] && entry[prompt.key].trim() !== '' && (
+                      <div key={prompt.key} className="border-l-4 border-purple-400 pl-4">
+                        <h4 className="font-medium text-gray-700 mb-1">{prompt.label}</h4>
+                        <p className="text-gray-600 whitespace-pre-wrap">{entry[prompt.key]}</p>
+                      </div>
+                    )
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (currentPage === 'journal') {
+    const journalPrompts = [
+      { key: 'whatHappened', label: 'What happened?' },
+      { key: 'howDoYouFeel', label: 'How do you feel?' },
+      { key: 'locateFeeling', label: 'Can you locate the feeling in your body?' },
+      { key: 'situationOrPerson', label: 'Which situation or person caused this emotional reaction?' },
+      { key: 'feelsFamiliar', label: 'Does it feel familiar to you?' },
+      { key: 'storyOrBelief', label: 'What\'s the story or belief that\'s coming up for you?' },
+      { key: 'pattern', label: 'What\'s the pattern that plays out?' },
+      { key: 'bodyProtection', label: 'What is your body trying to protect you from? What\'s the threat?' },
+      { key: 'healthierStory', label: 'What would be a healthier story or belief?' },
+      { key: 'needInMoment', label: 'What do you need in this moment?' },
+      { key: 'actionOrSitWith', label: 'Is there an action you can take to feel better, or do you just need to sit with this feeling for a moment?' },
+      { key: 'chooseToRespond', label: 'How are you going to choose to respond?' },
+      { key: 'doDifferently', label: 'What could you do differently in future?' }
+    ];
+
+    return (
+      <div className="max-w-4xl mx-auto p-6 bg-white min-h-screen">
+        <div className="mb-6">
+          <button
+            onClick={() => setCurrentPage('main')}
+            className="text-blue-600 hover:text-blue-800 mb-4"
+          >
+            ← Back to Main
+          </button>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Reflection Journal</h1>
+          <p className="text-gray-600 text-lg mb-6">Take time to explore your emotions and responses</p>
+        </div>
+
+        <div className="space-y-6">
+          {journalPrompts.map((prompt) => (
+            <div key={prompt.key} className="mb-6">
+              <label className="block text-lg font-medium text-gray-700 mb-2">
+                {prompt.label}
+              </label>
+              <textarea
+                value={currentJournalEntry[prompt.key]}
+                onChange={(e) => handleJournalChange(prompt.key, e.target.value)}
+                rows={4}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-vertical"
+                placeholder="Write your thoughts here..."
+              />
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-8 mb-6">
+          <button
+            onClick={saveJournalEntry}
+            className="w-full bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-lg transition-colors font-semibold text-lg"
+          >
+            Save Journal Entry
+          </button>
+        </div>
+
+        {journalEntries.length > 0 && (
+          <div className="bg-gray-50 p-6 rounded-lg mt-8">
+            <h3 className="font-semibold text-lg mb-4">Previous Journal Entries ({journalEntries.length})</h3>
+            <div className="space-y-2">
+              {journalEntries.slice(-5).reverse().map((entry) => (
+                <div key={entry.id} className="flex items-center justify-between p-3 bg-white rounded border">
+                  <span className="text-gray-600">{new Date(entry.timestamp).toLocaleString()}</span>
+                  <span className="text-sm text-gray-500">
+                    {Object.values(entry).filter(val => val && val !== entry.id && val !== entry.timestamp).length} responses
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+}
